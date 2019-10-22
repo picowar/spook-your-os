@@ -38,17 +38,35 @@ void init_channel() {
 
 // Callback for send
 int dd_send(const uint8_t* packet, size_t size) {
-
+    int* data = (int*) malloc(size*sizeof(int));
     bool bit;
+    int idx = 0;
+    if (size == CHUNK_LEN + CHUNK_ID_LEN) {
+        for (int i = 0; i < 16; i++) {
+            if (i > 1 && i < 8) continue;
+            bit = (packet[i / 8] >> (i % 8)) & 1;
+            data[idx] = bit;
+            idx++;
+        }
+    } else {
+        for (int i = 0; i < size; i++) {
+            bit = (packet[i / 8] >> (i % 8)) & 1;
+            data[i] = bit;
+        }
+    }
+
     for (int i = 0; i < size; i++) {
-        bit = (packet[i / 8] >> (i % 8)) & 1;
-        if (bit) {
+        if(data[i]) {
             hi();
             lo();
         } else {
             lo();
             hi();
         }
+    }
+    
+    for (int i = 0; i < size; i++) {
+        printf("data[%d]: %d\n", i, data[i]);
     }
 
     return EXIT_SUCCESS;

@@ -15,7 +15,7 @@ int init_trojan(trojan_sess_t *sess,
 int send_msg(trojan_sess_t *sess, const char *msg) {
     if (sess == NULL || msg == NULL) return EXIT_FAILURE;
 
-    uint8_t msg_len = (uint8_t) strlen(msg);
+    uint8_t msg_len = ((uint8_t) strlen(msg))-1;
 
     // initialize header
     fitf_t fitf;
