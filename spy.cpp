@@ -1,12 +1,15 @@
 #include "libdd_spy.hpp"
 
 #define CONTENTION_DETECT_COUNT 10
+#define LO_DETECT_COUNT 10
+#define LO_DETECT_WAIT 15
 #define CONTENTION_WAIT 25
 #define STATE_CHANGE_COUNT 3
 #define PERIOD 1300000L
 #define PROBE_WAIT 15
 
 uint64_t u64;
+unsigned long long t; 
 
 inline int rdseed(uint64_t *seed) {
     unsigned char ok;
@@ -34,9 +37,24 @@ int dd_recv(uint8_t *packet, size_t *size, bool fitf) {
 
     if (fitf) {
         bits_to_recv = FITF_LEN;
+        printf("%llu\n", __rdtsc() - t);
     } else {
         bits_to_recv = CHUNK_ID_LEN + CHUNK_LEN;
     }
+
+    // detect lo
+    int miss_counter = 0;
+    while (miss_counter < LO_DETECT_COUNT) {
+        if (rdseed(&u64) != RDSEED_SUCCESS) {
+            // rdseed failed
+            miss_counter++;
+        } else {
+            miss_counter = 0;
+        }
+
+        rdtsc_wait(LO_DETECT_WAIT);
+    }
+    printf("lo detected: %llu\n", __rdtsc());
 
     while (bits_recv < bits_to_recv) {
         if (rdseed(&u64) == RDSEED_SUCCESS) {
@@ -106,7 +124,8 @@ inline void init_channel() {
 
         rdtsc_wait(CONTENTION_WAIT);
     }
-    printf("Spy is now listening!\n");
+    //printf("Spy detects trojan at: %llu!\n", __rdtsc());
+    t = __rdtsc();
 }
 
 int main() {
