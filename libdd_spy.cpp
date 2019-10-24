@@ -1,22 +1,16 @@
 #include "libdd_spy.hpp"
 
 int init_spy(spy_sess_t *sess, 
-            send_buffer_t send_cbk,
-            recv_buffer_t recv_cbk) {
+            recv_buffer_t recv_cbk,
+            send_buffer_t send_cbk) {
 
-    while (true) {
-        
-        memset(sess, 0, sizeof(sess));
-        sess->dd_send = send_cbk;
-        sess->dd_recv = recv_cbk;
-        sess->finished = false;
-
-        sess->spy_state = Inactive;
-        start_spy_sess(sess);
-    }
+    memset(sess, 0, sizeof(sess));
+    sess->dd_send = send_cbk;
+    sess->dd_recv = recv_cbk;
+    sess->finished = false;
+    sess->spy_state = Inactive;
 
     return EXIT_SUCCESS;
-
 }
 
 int start_spy_sess(spy_sess_t *sess) {
@@ -26,7 +20,8 @@ int start_spy_sess(spy_sess_t *sess) {
     int len;
 
     // Receiving header from trojan
-    sess->dd_recv(&fitf, (size_t*) bytes_recv);
+    sess->dd_recv(&fitf, (size_t*) bytes_recv, true);
+    printf("received header\n");
     len = process_fitf(sess, &fitf);
 
     if (len < 0) {
@@ -39,7 +34,7 @@ int start_spy_sess(spy_sess_t *sess) {
     // receiving chunks from trojan
     for (int i = 0; i < len; i++) {
         memset(data, 0, MAX_MTU);
-        sess->dd_recv(data, (size_t*) bytes_recv);
+        sess->dd_recv(data, (size_t*) bytes_recv, false);
         process_chunk(sess, data, i%2);
     }
 
@@ -70,7 +65,7 @@ int process_chunk(spy_sess_t *sess, uint8_t *packet, bool flag) {
     for (int j = 0; j < 8; j++) {
         temp[j] = packet[(9-j)-1];
     }
-    temp[8] = NULL;
+    temp[8] = 0;
     char c = strtol(temp, 0, 2);
     printf("%c", c);
     return EXIT_SUCCESS;

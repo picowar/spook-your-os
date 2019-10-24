@@ -9,8 +9,6 @@
 #include <time.h>
 #include <math.h>
 
-#include "libdd_trojan.hpp"
-
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 #define RDSEED_SUCCESS 1
@@ -19,7 +17,7 @@
 #define FITF_LEN 8       // number of bits in fitf
 #define MAX_MTU 10
 
-typedef int (*recv_buffer_t)(uint8_t*, size_t*);
+typedef int (*recv_buffer_t)(uint8_t*, size_t*, bool);
 
 typedef int (*send_buffer_t)(const uint8_t*, size_t);
 

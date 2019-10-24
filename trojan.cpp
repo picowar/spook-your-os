@@ -1,10 +1,13 @@
 #include "libdd_trojan.hpp"
 
-#define INIT_CONTENTION 500
+#define INIT_CONTENTION 400000L
 #define PRE_SENDING_CONT 10
 #define MAX_LEN 32 // Max length of message that can be sent
 #define HALF_PERIOD 680000L
 #define RDSEED_SPAM 8
+
+unsigned long long t;
+unsigned long long imp_t[10];
 
 inline int rdseed(uint64_t *seed) {
     unsigned char ok;
@@ -32,13 +35,17 @@ inline void lo() {
 // Initialize communication by creating contention
 void init_channel() {
     uint64_t u64;
-    for (int i = 0; i < INIT_CONTENTION; i++) {
-        rdseed(&u64);
+    unsigned long long init = __rdtsc();
+    while (__rdtsc() - init < INIT_CONTENTION) {
+        for (int i = 0; i < RDSEED_SPAM; i++) {
+            rdseed(&u64);
+        }
     }
 }
 
 // Callback for send
 int dd_send(const uint8_t* packet, size_t size) {
+    imp_t[1] = __rdtsc();
     bool* data = (bool*) malloc(size * sizeof(bool));
     bool bit;
     bool temp;
@@ -61,6 +68,8 @@ int dd_send(const uint8_t* packet, size_t size) {
         }
     }
 
+    imp_t[2] = __rdtsc();
+    
     // before you start sending a packet, enable a state of 
     // very very high contention
     for (int i = 0; i < PRE_SENDING_CONT; i++) {
@@ -78,9 +87,9 @@ int dd_send(const uint8_t* packet, size_t size) {
         }
     }
     
-    for (int i = 0; i < size; i++) {
-        printf("data[%d]: %d\n", i, data[i]);
-    }
+    // for (int i = 0; i < size; i++) {
+    //     printf("data[%d]: %d\n", i, data[i]);
+    // }
 
     free(data);
     data = NULL;
@@ -90,22 +99,27 @@ int dd_send(const uint8_t* packet, size_t size) {
 
 
 // Callback for recv
-int dd_recv(uint8_t* packet, size_t *size) {
+int dd_recv(uint8_t* packet, size_t *size, bool fitf) {
     return EXIT_SUCCESS;
 }
 
 int main() {
 
-    init_channel();
-
     trojan_sess_t sess;
+    char input[MAX_LEN];
+
+    // printf("Please type a message\n");
     init_trojan(&sess, &dd_recv, &dd_send);
 
-    printf("Please type a message\n");
-    char input[MAX_LEN];
     while (true) {
         fgets(input, MAX_LEN, stdin);
+        init_channel();
+        imp_t[0] = __rdtsc();
         send_msg(&sess, input);
+        printf("%llu\n", imp_t[0]);
+        printf("%llu\n", imp_t[1]);
+        printf("%llu\n", imp_t[2]);
     }
 
+    return EXIT_SUCCESS;
 }
