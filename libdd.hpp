@@ -7,6 +7,7 @@
 #include <x86intrin.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 
 #include "libdd_trojan.hpp"
 
@@ -16,6 +17,7 @@
 #define CHUNK_LEN 8      // number of bits transferred in one chunk excl id
 #define CHUNK_ID_LEN 2   // number of bits in chunk id
 #define FITF_LEN 8       // number of bits in fitf
+#define MAX_MTU 10
 
 typedef int (*recv_buffer_t)(uint8_t*, size_t*);
 

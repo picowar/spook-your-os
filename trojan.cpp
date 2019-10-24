@@ -1,6 +1,7 @@
 #include "libdd_trojan.hpp"
 
 #define INIT_CONTENTION 500
+#define PRE_SENDING_CONT 10
 #define MAX_LEN 32 // Max length of message that can be sent
 #define HALF_PERIOD 680000L
 #define RDSEED_SPAM 8
@@ -38,8 +39,9 @@ void init_channel() {
 
 // Callback for send
 int dd_send(const uint8_t* packet, size_t size) {
-    int* data = (int*) malloc(size*sizeof(int));
+    bool* data = (bool*) malloc(size * sizeof(bool));
     bool bit;
+    bool temp;
     int idx = 0;
     if (size == CHUNK_LEN + CHUNK_ID_LEN) {
         for (int i = 0; i < 16; i++) {
@@ -48,13 +50,24 @@ int dd_send(const uint8_t* packet, size_t size) {
             data[idx] = bit;
             idx++;
         }
+        temp = data[0];
+        data[0] = data[1];
+        data[1] = temp;
     } else {
-        for (int i = 0; i < size; i++) {
+        data[0] = 1;
+        for (int i = 0; i < size-1; i++) {
             bit = (packet[i / 8] >> (i % 8)) & 1;
-            data[i] = bit;
+            data[i+1] = bit;
         }
     }
 
+    // before you start sending a packet, enable a state of 
+    // very very high contention
+    for (int i = 0; i < PRE_SENDING_CONT; i++) {
+        hi();
+    }
+
+    // start sending the data
     for (int i = 0; i < size; i++) {
         if(data[i]) {
             hi();
@@ -68,6 +81,9 @@ int dd_send(const uint8_t* packet, size_t size) {
     for (int i = 0; i < size; i++) {
         printf("data[%d]: %d\n", i, data[i]);
     }
+
+    free(data);
+    data = NULL;
 
     return EXIT_SUCCESS;
 }
