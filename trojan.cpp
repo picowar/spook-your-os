@@ -1,6 +1,6 @@
 #include "libdd_trojan.hpp"
 
-#define INIT_CONTENTION 100000L
+#define INIT_CONTENTION 200000L
 #define PRE_SENDING_CONT 10
 #define MAX_LEN 32 // Max length of message that can be sent
 #define HALF_PERIOD 680000L
@@ -51,6 +51,7 @@ int dd_send(const uint8_t* packet, size_t size) {
     bool bit;
     bool temp;
     int idx = 0;
+    int flag = false;
     if (size == CHUNK_LEN + CHUNK_ID_LEN) {
         for (int i = 0; i < 16; i++) {
             if (i > 1 && i < 8) continue;
@@ -61,23 +62,18 @@ int dd_send(const uint8_t* packet, size_t size) {
         temp = data[0];
         data[0] = data[1];
         data[1] = temp;
-        imp_t[2] = __rdtsc();
     } else {
+        flag = true;
         data[0] = 1;
         for (int i = 0; i < size-1; i++) {
             bit = (packet[i / 8] >> (i % 8)) & 1;
             data[i+1] = bit;
-        }
-        imp_t[1] = __rdtsc();
+        } 
     }
 
-    
-    
-    // before you start sending a packet, enable a state of 
-    // very very high contention
-    for (int i = 0; i < PRE_SENDING_CONT; i++) {
-        hi();
-    }
+    // before sending a packet
+    lo();
+    hi();
 
     // start sending the data
     for (int i = 0; i < size; i++) {
@@ -89,10 +85,6 @@ int dd_send(const uint8_t* packet, size_t size) {
             hi();
         }
     }
-    
-    // for (int i = 0; i < size; i++) {
-    //     printf("data[%d]: %d\n", i, data[i]);
-    // }
 
     free(data);
     data = NULL;
@@ -111,16 +103,13 @@ int main() {
     trojan_sess_t sess;
     char input[MAX_LEN];
 
-    // printf("Please type a message\n");
+    printf("Please type a message\n");
     init_trojan(&sess, &dd_recv, &dd_send);
 
     while (true) {
         fgets(input, MAX_LEN, stdin);
         init_channel();
-        imp_t[0] = __rdtsc();
         send_msg(&sess, input);
-        printf("time when low starts: %llu\n", imp_t[0]);
-        printf("time when lo ends: %llu\n", imp_t[1]);
     }
 
     return EXIT_SUCCESS;

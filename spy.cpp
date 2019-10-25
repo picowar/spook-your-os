@@ -1,12 +1,15 @@
 #include "libdd_spy.hpp"
 
 #define CONTENTION_DETECT_COUNT 10
-#define LO_DETECT_COUNT 10
-#define LO_DETECT_WAIT 15
-#define CONTENTION_WAIT 25
-#define STATE_CHANGE_COUNT 3
+#define LO_DETECT_WAIT 1500
+#define HI_DETECT_WAIT 700
+#define CONTENTION_WAIT 2000
+#define STATE_CHANGE_COUNT 4
 #define PERIOD 1300000L
-#define PROBE_WAIT 15
+#define PROBE_WAIT 700
+#define LARGE_BACK_OFF 3000
+#define BACK_OFF 1000
+#define SMALL_WAIT 300
 
 uint64_t u64;
 unsigned long long t; 
@@ -17,9 +20,10 @@ inline int rdseed(uint64_t *seed) {
 	return (int)ok;
 }
 
-inline void rdtsc_wait(int n) {
-    for (int i = 0; i < n; i++) {
-        __rdtsc();
+inline void rdtsc_wait(unsigned long long n) {
+    unsigned long long init = __rdtsc();
+    while (__rdtsc() - init < n) {
+        // spin 
     }
 }
 
@@ -37,25 +41,45 @@ int dd_recv(uint8_t *packet, size_t *size, bool fitf) {
 
     if (fitf) {
         bits_to_recv = FITF_LEN;
-        printf("%llu\n", __rdtsc() - t);
     } else {
         bits_to_recv = CHUNK_ID_LEN + CHUNK_LEN;
     }
 
     // detect lo
     int miss_counter = 0;
-    while (miss_counter < LO_DETECT_COUNT) {
-        if (rdseed(&u64) != RDSEED_SUCCESS) {
-            // rdseed failed
-            miss_counter++;
-        } else {
+    int hit_counter = 0;
+
+    while (hit_counter < STATE_CHANGE_COUNT) {
+
+        if (rdseed(&u64) == RDSEED_SUCCESS) {
+            // rdseed accessed --> low contention
+            hit_counter++;
             miss_counter = 0;
+        } else {
+            // rdseed missed, indicates high contention
+            miss_counter++;
+            hit_counter = 0;
         }
 
-        rdtsc_wait(LO_DETECT_WAIT);
+        if (miss_counter >= 3) {
+            rdtsc_wait(LO_DETECT_WAIT);
+        }
     }
-    printf("lo detected: %llu\n", __rdtsc());
 
+    // detect high contention
+    for (int i = 0; i < 2; i++) {
+        miss_counter = 0;
+        while (miss_counter < STATE_CHANGE_COUNT) {
+            if (rdseed(&u64) != RDSEED_SUCCESS) {
+                // rdseed failed
+                miss_counter++;
+            } else {
+                miss_counter = 0;
+            }
+            rdtsc_wait(HI_DETECT_WAIT);
+        }
+    }
+    
     while (bits_recv < bits_to_recv) {
         if (rdseed(&u64) == RDSEED_SUCCESS) {
             // if zero is received
@@ -66,6 +90,7 @@ int dd_recv(uint8_t *packet, size_t *size, bool fitf) {
                 // definitely not noise, change state
                 curr_state = 0;
                 red_flag = 0; 
+                curr = __rdtsc();
                 if (curr - before > PERIOD || bits_recv == 0) {
                     before = curr;
                     packet[bits_recv] = '1';
@@ -107,7 +132,12 @@ int dd_recv(uint8_t *packet, size_t *size, bool fitf) {
         rdtsc_wait(PROBE_WAIT);        
     }
 
-    *size = bits_recv;
+    size = (size_t*) &bits_recv;
+
+    for (int i = 0; i < bits_recv; i++) {
+        printf("bit: %d\n", packet[i]);
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -124,8 +154,6 @@ inline void init_channel() {
 
         rdtsc_wait(CONTENTION_WAIT);
     }
-    //printf("Spy detects trojan at: %llu!\n", __rdtsc());
-    t = __rdtsc();
 }
 
 int main() {
