@@ -18,6 +18,8 @@ The protocol is:
     3. The length packet has a 1 as its first bit, and then the encoded length value.
     4. The data packet has a 1 as its first bit, a 1/0 as the second, and the bit representation of 1 byte of information as the rest.
     5. The spy decodes these packets and discards those packets that don't satisfy the protocol.
+    
+The biggest challenge was synchronizing the initial bits of a packet and then maintaining the synchronization through the entire packet.
   
  
 
