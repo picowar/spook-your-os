@@ -134,9 +134,9 @@ int dd_recv(uint8_t *packet, size_t *size, bool fitf) {
 
     size = (size_t*) &bits_recv;
 
-    for (int i = 0; i < bits_recv; i++) {
-        printf("bit: %d\n", packet[i]);
-    }
+    // for (int i = 0; i < bits_recv; i++) {
+    //     printf("bit: %d\n", packet[i]);
+    // }
 
     return EXIT_SUCCESS;
 }

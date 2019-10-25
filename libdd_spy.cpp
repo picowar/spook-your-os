@@ -28,9 +28,6 @@ int start_spy_sess(spy_sess_t *sess) {
         len = DEFAULT_MSG_LEN;
     }
 
-    printf("len: %d\n", len);
-    len = DEFAULT_MSG_LEN;
-
     // receiving chunks from trojan
     for (int i = 0; i < len; i++) {
         memset(data, 0, MAX_MTU);
@@ -38,6 +35,7 @@ int start_spy_sess(spy_sess_t *sess) {
         process_chunk(sess, data, i%2);
     }
 
+    printf("\n");
     return EXIT_SUCCESS;
 }
 
@@ -67,7 +65,7 @@ int process_chunk(spy_sess_t *sess, uint8_t *packet, bool flag) {
     }
     temp[8] = 0;
     char c = strtol(temp, 0, 2);
-    printf("%c\n", c);
+    printf("%c", c);
     return EXIT_SUCCESS;
 }   
 
