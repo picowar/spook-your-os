@@ -1,6 +1,6 @@
 #include "libdd_trojan.hpp"
 
-#define INIT_CONTENTION 200000L
+#define INIT_CONTENTION 50000L
 #define PRE_SENDING_CONT 10
 #define MAX_LEN 32 // Max length of message that can be sent
 #define HALF_PERIOD 680000L
@@ -108,7 +108,13 @@ int main() {
 
     while (true) {
         fgets(input, MAX_LEN, stdin);
+        unsigned long long int t1 = __rdtsc();
         init_channel();
+        unsigned long long int t2 = __rdtsc();
+        printf("t1: %llu\n", t1);
+        printf("t2: %llu\n", t2);
+        printf("t2-t1: %llu\n", t2-t1);
+        exit(1);
         send_msg(&sess, input);
     }
 

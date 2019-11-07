@@ -1,9 +1,9 @@
 #include "libdd_spy.hpp"
 
-#define CONTENTION_DETECT_COUNT 10
+#define CONTENTION_DETECT_COUNT 7
 #define LO_DETECT_WAIT 1500
 #define HI_DETECT_WAIT 700
-#define CONTENTION_WAIT 2000
+#define CONTENTION_WAIT 500
 #define STATE_CHANGE_COUNT 4
 #define PERIOD 1300000L
 #define PROBE_WAIT 700
@@ -162,7 +162,13 @@ int main() {
     init_spy(&sess, &dd_recv, &dd_send);
 
     while (true) {
+        unsigned long long int t1 = __rdtsc();
         init_channel();
+        unsigned long long int t2 = __rdtsc();
+        printf("t1: %llu\n", t1);
+        printf("t2: %llu\n", t2);
+        printf("t2-t1: %llu\n", t2-t1);
+        exit(1);
         start_spy_sess(&sess);
     }
 
