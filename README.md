@@ -1,7 +1,7 @@
 spook-your-os
 ===================
 
-`spook-your-os` is an implementation of the deaddrop lab for CS598CF Fall 2019. It is a covert channel built by exploiting contention in the RNG module of recent Intel processors for fun and profit. 
+`spook-your-os` is a covert channel built by exploiting contention in the RNG module of recent Intel processors for fun and profit. 
 
 ----------
 
